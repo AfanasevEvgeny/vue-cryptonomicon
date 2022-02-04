@@ -1,12 +1,12 @@
 <template>
-  <div>
-
-  </div>
+<div>
+  weather
+</div>
 </template>
 
 <script>
 export default {
-  name: "MainLayout"
+  name: "WeatherPage"
 }
 </script>
 

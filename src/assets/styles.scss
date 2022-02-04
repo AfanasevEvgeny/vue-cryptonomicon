@@ -1,0 +1,39 @@
+@import "./variables.scss";
+@import "themes";
+
+//.....................body config.....................//
+body {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  background-color: var(--app-background-color);
+}
+
+
+//.....................header color config.....................//
+.header-background-color {
+  background-color: var(--header-background-color);
+}
+.header-background-color h1{
+  color: var(--logo-text-color);
+}
+
+//navigation
+.navigation-box-color a{
+  color: #41afa5;
+  transition: color 200ms ease-in-out;
+}
+
+.navigation-box-color a:hover{
+  color:var(--navigation-links-hover);
+}
+
+
+
+
+//elements default config
+a {
+  text-decoration: none
+}
+
+nav li {
+  list-style: none;
+}

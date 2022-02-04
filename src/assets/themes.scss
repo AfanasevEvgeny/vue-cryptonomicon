@@ -1,0 +1,18 @@
+@import "./variables.scss";
+
+
+:root {
+  --app-background-color: #222b30;
+  --header-background-color: #28353d;
+  --logo-text-color: #f3f3f5;
+  --navigation-links-hover: white;
+}
+
+
+[theme="light"] {
+  --app-background-color: white;
+  --header-background-color: #f2f7fa;
+  --logo-text-color: black;
+  --navigation-links-hover: black;
+
+}
