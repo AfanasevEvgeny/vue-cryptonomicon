@@ -1,6 +1,6 @@
 <template>
   <footer class="header-background-color">
-    Footer
+    .
   </footer>
 </template>
 
