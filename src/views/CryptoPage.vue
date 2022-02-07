@@ -46,7 +46,7 @@
         <div class="tickers-pagination-container">
           <input v-model="filter" class="filter-input" type="text"/>
           <div v-if="tickers.length>3">
-            <v-icon v-if="page!==1" @click="page-=1" name="arrow-left"/>
+            <v-icon v-if="page>1" @click="page-=1" name="arrow-left"/>
             <v-icon v-if="hasNextPage" @click="page+=1" name="arrow-right"/>
           </div>
         </div>
@@ -83,11 +83,12 @@ export default {
       return now.toISOString().substring(0, 10)
     },
     updateChart() {
+      //todo издержки chart js? как обновить данные не обновляя объект
       this.chartData = {
         labels: this.cryptoHistory.map(histData => histData.date),
         datasets: [
           {
-            label: this.sel.name,
+            label: 'Coin',
             backgroundColor: "#56b881",
             data: this.cryptoHistory.map(histData => histData.price)
           }
@@ -96,11 +97,10 @@ export default {
     },
     startUpdateTicker(ticker) {
       setInterval(async () => {
-        const priceResponse = await axios.get(`https://min-api.cryptocompare.com/data/price?fsym=${ticker.name}&tsyms=USD`)
+        const priceResponse = await axios.get(`https://min-api.cryptocompare.com/data/price?fsym=${ticker.name}&tsyms=USD&api_key=d56ef7d84fa09a856cedfb2f5a0731f3838ac135f25676d5740e4b39cb17d816`)
         ticker.price = priceResponse.data.USD > 1 ? priceResponse.data.USD.toFixed(2) : priceResponse.data.USD.toPrecision(2)
         if (ticker.name === this.sel?.name) {
           this.cryptoHistory.push({price: ticker.price, date: this.getDateFormatted()})
-          this.updateChart()
         }
       }, 5000)
     },
@@ -110,38 +110,51 @@ export default {
         price: 0
       }
       this.tickers.push(newTicker)
-      localStorage.setItem('cryptonomicon-tickers', JSON.stringify(this.tickers))
       this.startUpdateTicker(newTicker)
       this.ticker = ''
     },
     selectTicker(ticker) {
       this.sel = ticker
-      this.cryptoHistory = []
     },
     handleDelete(tickerToDelete) {
       this.tickers = this.tickers.filter(ticker => ticker.name !== tickerToDelete.name)
-      localStorage.setItem('cryptonomicon-tickers', JSON.stringify(this.tickers))
+      if (tickerToDelete === this.sel) {
+        this.sel = null
+      }
+    },
+    updateURLSearch() {
+      this.$router.push({
+        query: {
+          page: this.page.toString(),
+          filter: this.filter.toString(),
+        }
+      }).catch(() => {
+      })
     },
   },
   watch: {
-    sel() {
+    filter() {
+      this.page = 1
+    },
+    cryptoHistory() {
       this.updateChart()
     },
-    filter() {
-        this.$router.push({
-          query: {
-            page: this.page.toString(),
-            filter: this.filter.toString(),
-          }
-        }).catch(()=>{})
+    sel(val) {
+      if (!val) {
+        this.sel = null
+      }
+      this.cryptoHistory = []
     },
-    page() {
-        this.$router.push({
-          query: {
-            page: this.page.toString(),
-            filter: this.filter.toString(),
-          }
-        }).catch(()=>{})
+    tickers() {
+      localStorage.setItem('cryptonomicon-tickers', JSON.stringify(this.tickers))
+    },
+    paginatedTickers() {
+      if (this.paginatedTickers.length === 0 && this.page > 1) {
+        this.page = this.page - 1
+      }
+    },
+    pageStateOptions(){
+      this.updateURLSearch()
     }
   },
   computed: {
@@ -159,6 +172,12 @@ export default {
 
     isTickerExists() {
       return this.tickers.find(ticker => ticker.name.toLowerCase() === this.ticker.toLowerCase())
+    },
+    pageStateOptions() {
+      return {
+        page: this.page,
+        filter: this.filter
+      }
     }
   },
   created() {
