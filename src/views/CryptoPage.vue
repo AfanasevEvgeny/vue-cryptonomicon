@@ -1,16 +1,24 @@
 <template>
   <div class="main-grid">
     <div class="form__group field">
-      <input v-model="ticker" @keypress.enter="add" type="input" class="form__field" placeholder="Name" name="name"
+      <input v-model="ticker" @keypress.enter="!isTickerExists?add():''" type="input" class="form__field"
+             placeholder="Name" name="name"
              id='name' required/>
       <label for="name" class="form__label">Add ticker</label>
-      <button @click="add" class="search-btn">Search</button>
+      <button @click="add"
+              :disabled="isTickerExists"
+              class="search-btn"
+              :class="{'search-btn-disabled':isTickerExists}"
+      > {{
+          isTickerExists ? 'This ticker already in list' : 'Add'
+        }}
+      </button>
     </div>
     <div v-if="tickers.length" class="tickers-container">
       <div class="tickers-list-container">
         <div class="tickers-list">
           <div
-              v-for="(ticker, idx) in tickers"
+              v-for="(ticker, idx) in filteredTickers"
               :key="idx"
               @click="selectTicker(ticker)"
               :class="{
@@ -35,8 +43,12 @@
             </span>
           </div>
         </div>
-        <div>
-          arrows
+        <div class="tickers-pagination-container">
+          <input v-model="filter" class="filter-input" type="text"/>
+          <div v-if="tickers.length>3">
+            <v-icon name="arrow-left"/>
+            <v-icon name="arrow-right"/>
+          </div>
         </div>
       </div>
       <div>
@@ -46,7 +58,7 @@
     <div v-else style="margin-top: 6px">No tickers yet..</div>
   </div>
 </template>
-
+CH
 <script>
 import axios from 'axios'
 import CurrencyGraph from "@/components/CurrencyGraph";
@@ -60,7 +72,8 @@ export default {
       tickers: [],
       sel: null,
       chartData: {},
-      cryptoHistory: []
+      cryptoHistory: [],
+      filter: ''
     }
   },
   methods: {
@@ -80,20 +93,24 @@ export default {
         ]
       }
     },
+    startUpdateTicker(ticker) {
+      setInterval(async () => {
+        const priceResponse = await axios.get(`https://min-api.cryptocompare.com/data/price?fsym=${ticker.name}&tsyms=USD`)
+        ticker.price = priceResponse.data.USD > 1 ? priceResponse.data.USD.toFixed(2) : priceResponse.data.USD.toPrecision(2)
+        if (ticker.name === this.sel?.name) {
+          this.cryptoHistory.push({price: ticker.price, date: this.getDateFormatted()})
+          this.updateChart()
+        }
+      }, 5000)
+    },
     add() {
       const newTicker = {
         name: this.ticker,
         price: 0
       }
       this.tickers.push(newTicker)
-      setInterval(async () => {
-        const priceResponse = await axios.get(`https://min-api.cryptocompare.com/data/price?fsym=${newTicker.name}&tsyms=USD`)
-        newTicker.price = priceResponse.data.USD > 1 ? priceResponse.data.USD.toFixed(2) : priceResponse.data.USD.toPrecision(2)
-        if (newTicker.name === this.sel?.name) {
-          this.cryptoHistory.push({price: newTicker.price, date: this.getDateFormatted()})
-          this.updateChart()
-        }
-      }, 3000)
+      localStorage.setItem('cryptonomicon-tickers', JSON.stringify(this.tickers))
+      this.startUpdateTicker(newTicker)
       this.ticker = ''
     },
     selectTicker(ticker) {
@@ -102,12 +119,27 @@ export default {
     },
     handleDelete(tickerToDelete) {
       this.tickers = this.tickers.filter(ticker => ticker.name !== tickerToDelete.name)
+      localStorage.setItem('cryptonomicon-tickers', JSON.stringify(this.tickers))
     },
   },
   watch: {
     sel() {
       this.updateChart()
     }
+  },
+  computed: {
+
+    filteredTickers(){
+      return this.tickers.filter(ticker=>ticker.name.toLowerCase().includes(this.filter.toLowerCase()))
+    },
+
+    isTickerExists() {
+      return this.tickers.find(ticker => ticker.name.toLowerCase() === this.ticker.toLowerCase())
+    }
+  },
+  created() {
+    this.tickers = localStorage.getItem('cryptonomicon-tickers') ? JSON.parse(localStorage.getItem('cryptonomicon-tickers')) : []
+    this.tickers.forEach(ticker => this.startUpdateTicker(ticker))
   }
 }
 </script>
@@ -140,6 +172,18 @@ $gray: #9b9b9b;
 .tickers-list-container {
   display: grid;
   grid-template-rows: 90% 10%;
+}
+
+.tickers-pagination-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tickers-pagination-container svg {
+  fill: #56b881;
+  margin: 6px;
+  cursor: pointer;
 }
 
 .tickers-list {
@@ -182,12 +226,20 @@ $gray: #9b9b9b;
   text-decoration: none;
 }
 
+.filter-input {
+  background: none;
+  padding: 14px 20px;
+  color: white;
+  border: 1px solid #56b881;
+  border-radius: 4px;
+}
+
 // rest
 .search-btn {
   background-color: $primary;
   color: white;
-  padding: 14px 20px;
-  margin-left: 12px;
+  padding-left: 16px;
+  padding-right: 16px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -196,6 +248,16 @@ $gray: #9b9b9b;
 
 .search-btn:hover {
   background-color: #56b881;
+}
+
+.search-btn-disabled {
+  background-color: #f9886c;
+  cursor: default;
+}
+
+.search-btn-disabled:hover {
+  background-color: #f9886c;
+  cursor: default;
 }
 
 
