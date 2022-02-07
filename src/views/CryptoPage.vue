@@ -18,7 +18,7 @@
       <div class="tickers-list-container">
         <div class="tickers-list">
           <div
-              v-for="(ticker, idx) in filteredTickers"
+              v-for="(ticker, idx) in paginatedTickers"
               :key="idx"
               @click="selectTicker(ticker)"
               :class="{
@@ -46,8 +46,8 @@
         <div class="tickers-pagination-container">
           <input v-model="filter" class="filter-input" type="text"/>
           <div v-if="tickers.length>3">
-            <v-icon name="arrow-left"/>
-            <v-icon name="arrow-right"/>
+            <v-icon v-if="page!==1" @click="page-=1" name="arrow-left"/>
+            <v-icon v-if="hasNextPage" @click="page+=1" name="arrow-right"/>
           </div>
         </div>
       </div>
@@ -73,7 +73,8 @@ export default {
       sel: null,
       chartData: {},
       cryptoHistory: [],
-      filter: ''
+      filter: '',
+      page: 1,
     }
   },
   methods: {
@@ -125,12 +126,35 @@ export default {
   watch: {
     sel() {
       this.updateChart()
+    },
+    filter() {
+        this.$router.push({
+          query: {
+            page: this.page.toString(),
+            filter: this.filter.toString(),
+          }
+        }).catch(()=>{})
+    },
+    page() {
+        this.$router.push({
+          query: {
+            page: this.page.toString(),
+            filter: this.filter.toString(),
+          }
+        }).catch(()=>{})
     }
   },
   computed: {
-
-    filteredTickers(){
-      return this.tickers.filter(ticker=>ticker.name.toLowerCase().includes(this.filter.toLowerCase()))
+    hasNextPage() {
+      return this.filteredTickers.length > 3 * this.page
+    },
+    paginatedTickers() {
+      const start = 3 * (this.page - 1)
+      const end = 3 * this.page
+      return this.filteredTickers.slice(start, end)
+    },
+    filteredTickers() {
+      return this.tickers.filter(ticker => ticker.name.toLowerCase().includes(this.filter.toLowerCase()))
     },
 
     isTickerExists() {
@@ -140,6 +164,12 @@ export default {
   created() {
     this.tickers = localStorage.getItem('cryptonomicon-tickers') ? JSON.parse(localStorage.getItem('cryptonomicon-tickers')) : []
     this.tickers.forEach(ticker => this.startUpdateTicker(ticker))
+    try {
+      this.filter = this.$route.query.filter ? this.$route.query.filter : ''
+      this.page = this.$route.query.page ? this.$route.query.page : 1
+    } catch (e) {
+      return {}
+    }
   }
 }
 </script>

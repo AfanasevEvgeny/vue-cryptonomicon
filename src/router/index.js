@@ -11,6 +11,6 @@ export default new VueRouter({
         {path: '/', component: WelcomePage},
         {path: '/about', component: AboutPage},
         {path: '/weather', component: WeatherPage},
-        {path: '/crypto', component: CryptoPage},
+        {path: '/crypto', name: "crypto", component: CryptoPage},
     ]
 })
